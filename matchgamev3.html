@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emoji Match Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #f8f9fa, #e0eafc);
+      color: #333;
+    }
+    h2 {
+      text-align: center;
+      color: #444;
+      margin-bottom: 10px;
+    }
+    #form-section, #game-section, #already-played-message {
+      display: none;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      max-width: 600px;
+      margin: 40px auto;
+    }
+    .match-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .match-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+    .emoji-cell, .answer-cell {
+      width: 48%;
+      display: flex;
+      justify-content: center;
+    }
+    .draggable {
+      font-size: 2.5em;
+      cursor: grab;
+      transition: transform 0.2s;
+    }
+    .draggable:active {
+      transform: scale(1.15);
+    }
+    .droppable {
+      width: 100%;
+      padding: 16px;
+      min-height: 56px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      background-color: #fdfdfd;
+      transition: background 0.3s ease;
+      text-align: center;
+      font-size: 1.2em;
+    }
+    .droppable:hover {
+      background-color: #e8f0fe;
+    }
+    #popup {
+      display: none;
+      position: fixed;
+      top: 12%;
+      left: 5%;
+      right: 5%;
+      padding: 24px;
+      background-color: #fff;
+      border-radius: 10px;
+      border: 2px solid #444;
+      z-index: 1000;
+      box-shadow: 0 0 25px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    input[type="text"], input[type="email"] {
+      width: 90%;
+      padding: 12px;
+      margin: 12px 0;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+    button {
+      padding: 12px 28px;
+      font-size: 1em;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s;
+    }
+    button:hover {
+      background: linear-gradient(to right, #5b0ead, #1d60e5);
+      transform: scale(1.03);
+    }
+    #timer {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.2em;
+      margin-top: 15px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div id="already-played-message">
+    <h2>You've already played this game.</h2>
+    <p>Thank you for your participation!</p>
+  </div>
+
+  <div id="input-section">
+    <h2>Enter Your Details</h2>
+    <label>Name: <input type="text" id="name" /></label><br />
+    <label>Email: <input type="email" id="email" /></label><br />
+    <label>Roll No: <input type="text" id="roll" /></label><br />
+    <div style="text-align: center; margin-top: 20px;">
+      <button onclick="startGame()">Start</button>
+    </div>
+  </div>
+
+  <div id="game-section">
+    <h2>Emoji Match Game</h2>
+    <div id="timer">Time: 0s</div>
+    <div class="match-container" id="match-container"></div>
+  </div>
+
+  <div id="popup"></div>
+
+  <script>
+    const emojiAnswers = [
+      { emoji: "📚", answer: "Books" },
+      { emoji: "💻", answer: "Computer" },
+      { emoji: "🍎", answer: "Apple" },
+      { emoji: "⚽", answer: "Football" },
+      { emoji: "🚗", answer: "Car" },
+      { emoji: "🎵", answer: "Music" },
+      { emoji: "🌍", answer: "Earth" },
+    ];
+
+    let shuffledAnswers = [];
+    let score = 0;
+    let timer = 0;
+    let interval;
+    let attempts = 0;
+    let userData = {};
+
+    window.onload = function () {
+      const played = localStorage.getItem("emojiGamePlayed");
+      const formSection = document.getElementById("input-section");
+      const playedMsg = document.getElementById("already-played-message");
+
+      if (played) {
+        playedMsg.style.display = "block";
+        formSection.style.display = "none";
+      } else {
+        formSection.style.display = "block";
+        playedMsg.style.display = "none";
+      }
+    };
+
+    function startGame() {
+      userData.name = document.getElementById("name").value;
+      userData.email = document.getElementById("email").value;
+      userData.roll = document.getElementById("roll").value;
+
+      if (!userData.name || !userData.email || !userData.roll) {
+        alert("Please fill in all fields");
+        return;
+      }
+
+      document.getElementById("input-section").style.display = "none";
+      document.getElementById("game-section").style.display = "block";
+
+      startTimer();
+      loadGame();
+    }
+
+    function startTimer() {
+      interval = setInterval(() => {
+        timer++;
+        document.getElementById("timer").textContent = `Time: ${timer}s`;
+      }, 1000);
+    }
+
+    function loadGame() {
+      const matchContainer = document.getElementById("match-container");
+      matchContainer.innerHTML = "";
+      shuffledAnswers = [...emojiAnswers].sort(() => 0.5 - Math.random());
+
+      emojiAnswers.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.classList.add("match-row");
+
+        const emojiCell = document.createElement("div");
+        emojiCell.classList.add("emoji-cell");
+        const emojiDiv = document.createElement("div");
+        emojiDiv.classList.add("draggable");
+        emojiDiv.textContent = item.emoji;
+        emojiDiv.setAttribute("draggable", true);
+        emojiDiv.setAttribute("id", `emoji-${index}`);
+        emojiDiv.addEventListener("dragstart", dragStart);
+        emojiCell.appendChild(emojiDiv);
+
+        const answerCell = document.createElement("div");
+        answerCell.classList.add("answer-cell");
+        const answerDiv = document.createElement("div");
+        answerDiv.classList.add("droppable");
+        answerDiv.setAttribute("id", `answer-${index}`);
+        answerDiv.setAttribute("data-answer", shuffledAnswers[index].answer);
+        answerDiv.textContent = shuffledAnswers[index].answer;
+        answerDiv.addEventListener("dragover", dragOver);
+        answerDiv.addEventListener("drop", drop);
+        answerCell.appendChild(answerDiv);
+
+        row.appendChild(emojiCell);
+        row.appendChild(answerCell);
+        matchContainer.appendChild(row);
+      });
+    }
+
+    function dragStart(e) {
+      e.dataTransfer.setData("text", e.target.id);
+    }
+
+    function dragOver(e) {
+      e.preventDefault();
+    }
+
+    function drop(e) {
+      e.preventDefault();
+      const emojiId = e.dataTransfer.getData("text");
+      const emojiEl = document.getElementById(emojiId);
+      const emojiIndex = parseInt(emojiId.split("-")[1]);
+      const correctAnswer = emojiAnswers[emojiIndex].answer;
+
+      if (e.target.getAttribute("data-answer") === correctAnswer) {
+        e.target.appendChild(emojiEl);
+        score += 5;
+      } else {
+        e.target.appendChild(emojiEl);
+      }
+
+      attempts++;
+
+      if (attempts === 7) {
+        clearInterval(interval);
+        localStorage.setItem("emojiGamePlayed", "true");
+        showPopup();
+      }
+    }
+
+    function showPopup() {
+      const popup = document.getElementById("popup");
+      popup.style.display = "block";
+      popup.innerHTML = `
+        <h3>Game Over!</h3>
+        <p><strong>Name:</strong> ${userData.name}</p>
+        <p><strong>Email:</strong> ${userData.email}</p>
+        <p><strong>Roll No:</strong> ${userData.roll}</p>
+        <p><strong>Score:</strong> ${score}/35</p>
+        <p><strong>Time Taken:</strong> ${timer} seconds</p>
+      `;
+    }
+  </script>
+</body>
+</html>
