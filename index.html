@@ -47,6 +47,8 @@
       font-size: 2.5em;
       cursor: grab;
       transition: transform 0.2s;
+      user-select: none;
+      touch-action: none;
     }
     .draggable:active {
       transform: scale(1.15);
@@ -66,7 +68,7 @@
       text-align: center;
       font-size: 1.2em;
     }
-    .droppable:hover {
+    .droppable:hover, .droppable.highlight {
       background-color: #e8f0fe;
     }
     #popup {
@@ -140,6 +142,49 @@
   <div id="popup"></div>
 
   <script>
+    
+    document.addEventListener('touchstart', function (e) {
+      if (e.target.classList.contains('draggable')) {
+        const touch = e.touches[0];
+        const clone = e.target.cloneNode(true);
+        clone.style.position = 'absolute';
+        clone.style.top = touch.pageY + 'px';
+        clone.style.left = touch.pageX + 'px';
+        clone.style.zIndex = 9999;
+        clone.id = 'drag-clone';
+        document.body.appendChild(clone);
+
+        function moveClone(ev) {
+          const t = ev.touches[0];
+          clone.style.top = t.pageY + 'px';
+          clone.style.left = t.pageX + 'px';
+        }
+
+        function dropClone(ev) {
+          const dropTarget = document.elementFromPoint(ev.changedTouches[0].clientX, ev.changedTouches[0].clientY);
+          if (dropTarget && dropTarget.classList.contains('droppable')) {
+            dropTarget.appendChild(e.target);
+            const index = parseInt(e.target.id.split('-')[1]);
+            if (dropTarget.getAttribute('data-answer') === e.target.textContent) {
+              score += 5;
+            }
+            attempts++;
+            if (attempts === 7) {
+              clearInterval(interval);
+              localStorage.setItem("emojiGamePlayed", "true");
+              showPopup();
+            }
+          }
+          document.removeEventListener('touchmove', moveClone);
+          document.removeEventListener('touchend', dropClone);
+          clone.remove();
+        }
+
+        document.addEventListener('touchmove', moveClone);
+        document.addEventListener('touchend', dropClone);
+      }
+    });
+
     const emojiAnswers = [
       { emoji: "📚", answer: "Books" },
       { emoji: "💻", answer: "Computer" },
