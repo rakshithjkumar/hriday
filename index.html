@@ -2,18 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Emoji Match Game</title>
   <style>
+      .draggable {
+    -webkit-touch-callout: none; /* iOS Safari */
+    touch-action: none;
+  }
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 20px;
       background: linear-gradient(135deg, #f8f9fa, #e0eafc);
       color: #333;
-      -webkit-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
     }
     h2 {
       text-align: center;
@@ -47,10 +49,10 @@
       justify-content: center;
     }
     .draggable {
-      width: 64px;
-      height: 64px;
+      font-size: 2.5em;
       cursor: grab;
       transition: transform 0.2s;
+      user-select: none;
       touch-action: none;
     }
     .draggable:active {
@@ -145,14 +147,57 @@
   <div id="popup"></div>
 
   <script>
+    
+    document.addEventListener('touchstart', function (e) {
+      if (e.target.classList.contains('draggable')) {
+        const touch = e.touches[0];
+        const clone = e.target.cloneNode(true);
+        clone.style.position = 'absolute';
+        clone.style.top = touch.pageY + 'px';
+        clone.style.left = touch.pageX + 'px';
+        clone.style.zIndex = 9999;
+        clone.id = 'drag-clone';
+        document.body.appendChild(clone);
+
+        function moveClone(ev) {
+          const t = ev.touches[0];
+          clone.style.top = t.pageY + 'px';
+          clone.style.left = t.pageX + 'px';
+        }
+
+        function dropClone(ev) {
+          const dropTarget = document.elementFromPoint(ev.changedTouches[0].clientX, ev.changedTouches[0].clientY);
+          if (dropTarget && dropTarget.classList.contains('droppable')) {
+            dropTarget.appendChild(e.target);
+            const index = parseInt(e.target.id.split('-')[1]);
+            if (dropTarget.getAttribute('data-answer') === e.target.textContent) {
+              score += 5;
+            }
+            attempts++;
+            if (attempts === 7) {
+              clearInterval(interval);
+              localStorage.setItem("emojiGamePlayed", "true");
+              showPopup();
+            }
+          }
+          document.removeEventListener('touchmove', moveClone);
+          document.removeEventListener('touchend', dropClone);
+          clone.remove();
+        }
+
+        document.addEventListener('touchmove', moveClone);
+        document.addEventListener('touchend', dropClone);
+      }
+    });
+
     const emojiAnswers = [
-      { emojiName: "books", answer: "Books" },
-      { emojiName: "computer", answer: "Computer" },
-      { emojiName: "apple", answer: "Apple" },
-      { emojiName: "football", answer: "Football" },
-      { emojiName: "car", answer: "Car" },
-      { emojiName: "music", answer: "Music" },
-      { emojiName: "earth", answer: "Earth" },
+      { emoji: "📚", answer: "Books" },
+      { emoji: "💻", answer: "Computer" },
+      { emoji: "🍎", answer: "Apple" },
+      { emoji: "⚽", answer: "Football" },
+      { emoji: "🚗", answer: "Car" },
+      { emoji: "🎵", answer: "Music" },
+      { emoji: "🌍", answer: "Earth" },
     ];
 
     let shuffledAnswers = [];
@@ -211,20 +256,16 @@
 
         const emojiCell = document.createElement("div");
         emojiCell.classList.add("emoji-cell");
-
-        const emojiImg = document.createElement("img");
-        emojiImg.src = `images/${item.emojiName}.png`;
-        emojiImg.alt = item.answer;
-        emojiImg.classList.add("draggable");
-        emojiImg.setAttribute("draggable", true);
-        emojiImg.setAttribute("id", `emoji-${index}`);
-        emojiImg.setAttribute("data-answer", item.answer);
-        emojiImg.addEventListener("dragstart", dragStart);
-        emojiCell.appendChild(emojiImg);
+        const emojiDiv = document.createElement("div");
+        emojiDiv.classList.add("draggable");
+        emojiDiv.textContent = item.emoji;
+        emojiDiv.setAttribute("draggable", true);
+        emojiDiv.setAttribute("id", `emoji-${index}`);
+        emojiDiv.addEventListener("dragstart", dragStart);
+        emojiCell.appendChild(emojiDiv);
 
         const answerCell = document.createElement("div");
         answerCell.classList.add("answer-cell");
-
         const answerDiv = document.createElement("div");
         answerDiv.classList.add("droppable");
         answerDiv.setAttribute("id", `answer-${index}`);
@@ -252,7 +293,8 @@
       e.preventDefault();
       const emojiId = e.dataTransfer.getData("text");
       const emojiEl = document.getElementById(emojiId);
-      const correctAnswer = emojiEl.getAttribute("data-answer");
+      const emojiIndex = parseInt(emojiId.split("-")[1]);
+      const correctAnswer = emojiAnswers[emojiIndex].answer;
 
       if (e.target.getAttribute("data-answer") === correctAnswer) {
         e.target.appendChild(emojiEl);
