@@ -5,11 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Emoji Match Game</title>
   <style>
-      .draggable {
-    -webkit-touch-callout: none; /* iOS Safari */
-    touch-action: none;
-  }
-
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
@@ -53,6 +48,9 @@
       cursor: grab;
       transition: transform 0.2s;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-user-drag: none;
       touch-action: none;
     }
     .draggable:active {
@@ -73,7 +71,7 @@
       text-align: center;
       font-size: 1.2em;
     }
-    .droppable:hover, .droppable.highlight {
+    .droppable.highlight {
       background-color: #e8f0fe;
     }
     #popup {
@@ -147,49 +145,6 @@
   <div id="popup"></div>
 
   <script>
-    
-    document.addEventListener('touchstart', function (e) {
-      if (e.target.classList.contains('draggable')) {
-        const touch = e.touches[0];
-        const clone = e.target.cloneNode(true);
-        clone.style.position = 'absolute';
-        clone.style.top = touch.pageY + 'px';
-        clone.style.left = touch.pageX + 'px';
-        clone.style.zIndex = 9999;
-        clone.id = 'drag-clone';
-        document.body.appendChild(clone);
-
-        function moveClone(ev) {
-          const t = ev.touches[0];
-          clone.style.top = t.pageY + 'px';
-          clone.style.left = t.pageX + 'px';
-        }
-
-        function dropClone(ev) {
-          const dropTarget = document.elementFromPoint(ev.changedTouches[0].clientX, ev.changedTouches[0].clientY);
-          if (dropTarget && dropTarget.classList.contains('droppable')) {
-            dropTarget.appendChild(e.target);
-            const index = parseInt(e.target.id.split('-')[1]);
-            if (dropTarget.getAttribute('data-answer') === e.target.textContent) {
-              score += 5;
-            }
-            attempts++;
-            if (attempts === 7) {
-              clearInterval(interval);
-              localStorage.setItem("emojiGamePlayed", "true");
-              showPopup();
-            }
-          }
-          document.removeEventListener('touchmove', moveClone);
-          document.removeEventListener('touchend', dropClone);
-          clone.remove();
-        }
-
-        document.addEventListener('touchmove', moveClone);
-        document.addEventListener('touchend', dropClone);
-      }
-    });
-
     const emojiAnswers = [
       { emoji: "📚", answer: "Books" },
       { emoji: "💻", answer: "Computer" },
@@ -259,9 +214,7 @@
         const emojiDiv = document.createElement("div");
         emojiDiv.classList.add("draggable");
         emojiDiv.textContent = item.emoji;
-        emojiDiv.setAttribute("draggable", true);
         emojiDiv.setAttribute("id", `emoji-${index}`);
-        emojiDiv.addEventListener("dragstart", dragStart);
         emojiCell.appendChild(emojiDiv);
 
         const answerCell = document.createElement("div");
@@ -271,8 +224,6 @@
         answerDiv.setAttribute("id", `answer-${index}`);
         answerDiv.setAttribute("data-answer", shuffledAnswers[index].answer);
         answerDiv.textContent = shuffledAnswers[index].answer;
-        answerDiv.addEventListener("dragover", dragOver);
-        answerDiv.addEventListener("drop", drop);
         answerCell.appendChild(answerDiv);
 
         row.appendChild(emojiCell);
@@ -281,36 +232,73 @@
       });
     }
 
-    function dragStart(e) {
-      e.dataTransfer.setData("text", e.target.id);
-    }
+    document.addEventListener('touchstart', function (e) {
+      if (e.target.classList.contains('draggable')) {
+        e.preventDefault();
 
-    function dragOver(e) {
-      e.preventDefault();
-    }
+        const original = e.target;
+        const touch = e.touches[0];
 
-    function drop(e) {
-      e.preventDefault();
-      const emojiId = e.dataTransfer.getData("text");
-      const emojiEl = document.getElementById(emojiId);
-      const emojiIndex = parseInt(emojiId.split("-")[1]);
-      const correctAnswer = emojiAnswers[emojiIndex].answer;
+        original.style.visibility = 'hidden';
 
-      if (e.target.getAttribute("data-answer") === correctAnswer) {
-        e.target.appendChild(emojiEl);
-        score += 5;
-      } else {
-        e.target.appendChild(emojiEl);
+        const clone = original.cloneNode(true);
+        clone.style.position = 'absolute';
+        clone.style.top = touch.pageY + 'px';
+        clone.style.left = touch.pageX + 'px';
+        clone.style.zIndex = 9999;
+        clone.style.opacity = 0.8;
+        clone.style.pointerEvents = 'none';
+        clone.id = 'drag-clone';
+        document.body.appendChild(clone);
+
+        function moveClone(ev) {
+          ev.preventDefault();
+          const t = ev.touches[0];
+          clone.style.top = t.pageY + 'px';
+          clone.style.left = t.pageX + 'px';
+        }
+
+        function dropClone(ev) {
+          ev.preventDefault();
+          const dropTarget = document.elementFromPoint(
+            ev.changedTouches[0].clientX,
+            ev.changedTouches[0].clientY
+          );
+
+          if (dropTarget && dropTarget.classList.contains('droppable')) {
+            dropTarget.innerHTML = '';
+            dropTarget.appendChild(original);
+            original.style.visibility = 'visible';
+
+            const index = parseInt(original.id.split('-')[1]);
+            if (dropTarget.getAttribute('data-answer') === emojiAnswers[index].answer) {
+              score += 5;
+              dropTarget.style.border = '2px solid #28a745';
+              dropTarget.style.backgroundColor = '#d4edda';
+            } else {
+              dropTarget.style.border = '2px solid #dc3545';
+              dropTarget.style.backgroundColor = '#f8d7da';
+            }
+
+            attempts++;
+            if (attempts === emojiAnswers.length) {
+              clearInterval(interval);
+              localStorage.setItem("emojiGamePlayed", "true");
+              showPopup();
+            }
+          } else {
+            original.style.visibility = 'visible';
+          }
+
+          document.removeEventListener('touchmove', moveClone);
+          document.removeEventListener('touchend', dropClone);
+          clone.remove();
+        }
+
+        document.addEventListener('touchmove', moveClone, { passive: false });
+        document.addEventListener('touchend', dropClone, { passive: false });
       }
-
-      attempts++;
-
-      if (attempts === 7) {
-        clearInterval(interval);
-        localStorage.setItem("emojiGamePlayed", "true");
-        showPopup();
-      }
-    }
+    }, { passive: false });
 
     function showPopup() {
       const popup = document.getElementById("popup");
@@ -322,6 +310,7 @@
         <p><strong>Roll No:</strong> ${userData.roll}</p>
         <p><strong>Score:</strong> ${score}/35</p>
         <p><strong>Time Taken:</strong> ${timer} seconds</p>
+        <button onclick="window.location.reload();">Play Again</button>
       `;
     }
   </script>
