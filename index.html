@@ -273,11 +273,11 @@
             const index = parseInt(original.id.split('-')[1]);
             if (dropTarget.getAttribute('data-answer') === emojiAnswers[index].answer) {
               score += 5;
-              dropTarget.style.border = '2px solid #28a745';
-              dropTarget.style.backgroundColor = '#d4edda';
+              dropTarget.style.border = '2px solid #1A97F0';
+              dropTarget.style.backgroundColor = '#60B1EB';
             } else {
-              dropTarget.style.border = '2px solid #dc3545';
-              dropTarget.style.backgroundColor = '#f8d7da';
+              dropTarget.style.border = '2px solid #1A97F0';
+              dropTarget.style.backgroundColor = '#60B1EB';
             }
 
             attempts++;
@@ -310,7 +310,6 @@
         <p><strong>Roll No:</strong> ${userData.roll}</p>
         <p><strong>Score:</strong> ${score}/35</p>
         <p><strong>Time Taken:</strong> ${timer} seconds</p>
-        <button onclick="window.location.reload();">Play Again</button>
       `;
     }
   </script>
