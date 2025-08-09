@@ -259,41 +259,45 @@
         }
 
         function dropClone(ev) {
-          ev.preventDefault();
-          const dropTarget = document.elementFromPoint(
-            ev.changedTouches[0].clientX,
-            ev.changedTouches[0].clientY
-          );
+  ev.preventDefault();
+  const dropTarget = document.elementFromPoint(
+    ev.changedTouches[0].clientX,
+    ev.changedTouches[0].clientY
+  );
 
-          if (dropTarget && dropTarget.classList.contains('droppable')) {
-            dropTarget.innerHTML = '';
-            dropTarget.appendChild(original);
-            original.style.visibility = 'visible';
+  if (dropTarget && dropTarget.classList.contains('droppable')) {
+    const index = parseInt(original.id.split('-')[1]);
+    const isCorrect = dropTarget.getAttribute('data-answer') === emojiAnswers[index].answer;
 
-            const index = parseInt(original.id.split('-')[1]);
-            if (dropTarget.getAttribute('data-answer') === emojiAnswers[index].answer) {
-              score += 5;
-              dropTarget.style.border = '2px solid #1A97F0';
-              dropTarget.style.backgroundColor = '#60B1EB';
-            } else {
-              dropTarget.style.border = '2px solid #1A97F0';
-              dropTarget.style.backgroundColor = '#60B1EB';
-            }
+    if (isCorrect) {
+      score += 5;
 
-            attempts++;
-            if (attempts === emojiAnswers.length) {
-              clearInterval(interval);
-              localStorage.setItem("emojiGamePlayed", "true");
-              showPopup();
-            }
-          } else {
-            original.style.visibility = 'visible';
-          }
+      // Remove the whole match-row
+      const row = original.closest('.match-row');
+      if (row) {
+        row.remove();
+      }
+    } else {
+      // Wrong match → optional feedback
+      dropTarget.style.border = '2px solid red';
+      dropTarget.style.backgroundColor = '#f8d7da';
+    }
 
-          document.removeEventListener('touchmove', moveClone);
-          document.removeEventListener('touchend', dropClone);
-          clone.remove();
-        }
+    attempts++;
+    if (document.querySelectorAll('.match-row').length === 0) {
+      clearInterval(interval);
+      localStorage.setItem("emojiGamePlayed", "true");
+      showPopup();
+    }
+  } else {
+    original.style.visibility = 'visible';
+  }
+
+  document.removeEventListener('touchmove', moveClone);
+  document.removeEventListener('touchend', dropClone);
+  clone.remove();
+}
+
 
         document.addEventListener('touchmove', moveClone, { passive: false });
         document.addEventListener('touchend', dropClone, { passive: false });
