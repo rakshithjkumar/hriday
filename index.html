@@ -118,6 +118,29 @@
       margin-top: 15px;
       color: #333;
     }
+
+    #feedback {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 1em;
+  display: none;
+  z-index: 2000;
+  animation: fadeInOut 1.5s ease forwards;
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, 20px); }
+  10% { opacity: 1; transform: translate(-50%, 0); }
+  90% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 20px); }
+}
+
+
   </style>
 </head>
 <body>
@@ -267,14 +290,23 @@
 
   if (dropTarget && dropTarget.classList.contains('droppable')) {
     const index = parseInt(original.id.split('-')[1]);
-    const isCorrect = dropTarget.getAttribute('data-answer') === emojiAnswers[index].answer;
+    const droppedWord = dropTarget.getAttribute('data-answer');
+    const droppedEmoji = emojiAnswers[index].emoji;
 
-    // Increment score only for correct match
-    if (isCorrect) {
+    // Show feedback without revealing correctness
+    const feedback = document.getElementById('feedback');
+    feedback.textContent = `Dropped ${droppedEmoji} on "${droppedWord}"`;
+    feedback.style.display = 'block';
+    feedback.style.animation = 'none'; // restart animation
+    void feedback.offsetWidth; // force reflow
+    feedback.style.animation = 'fadeInOut 1.5s ease forwards';
+
+    // Score update only if correct
+    if (droppedWord === emojiAnswers[index].answer) {
       score += 5;
     }
 
-    // Remove the whole match-row regardless of match correctness
+    // Remove the whole row (emoji + answer)
     const row = original.closest('.match-row');
     if (row) {
       row.remove();
@@ -287,7 +319,6 @@
       showPopup();
     }
   } else {
-    // If dropped outside valid target → do nothing and return emoji
     original.style.visibility = 'visible';
   }
 
@@ -295,6 +326,7 @@
   document.removeEventListener('touchend', dropClone);
   clone.remove();
 }
+
 
 
 
@@ -316,5 +348,6 @@
       `;
     }
   </script>
+  <div id="feedback"></div>
 </body>
 </html>
