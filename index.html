@@ -297,17 +297,17 @@
     const feedback = document.getElementById('feedback');
     feedback.textContent = `Dropped ${droppedEmoji} on "${droppedWord}"`;
     feedback.style.display = 'block';
-    feedback.style.animation = 'none'; // restart animation
-    void feedback.offsetWidth; // force reflow
+    feedback.style.animation = 'none';
+    void feedback.offsetWidth; // reflow
     feedback.style.animation = 'fadeInOut 1.5s ease forwards';
 
-    // Score update only if correct
+    // Score only if correct
     if (droppedWord === emojiAnswers[index].answer) {
       score += 5;
     }
 
-    // Remove the whole row (emoji + answer)
-    const row = original.closest('.match-row');
+    // Remove the row where the word (drop target) is
+    const row = dropTarget.closest('.match-row');
     if (row) {
       row.remove();
     }
@@ -326,6 +326,7 @@
   document.removeEventListener('touchend', dropClone);
   clone.remove();
 }
+
 
 
 
