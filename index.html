@@ -269,18 +269,15 @@
     const index = parseInt(original.id.split('-')[1]);
     const isCorrect = dropTarget.getAttribute('data-answer') === emojiAnswers[index].answer;
 
+    // Increment score only for correct match
     if (isCorrect) {
       score += 5;
+    }
 
-      // Remove the whole match-row
-      const row = original.closest('.match-row');
-      if (row) {
-        row.remove();
-      }
-    } else {
-      // Wrong match → optional feedback
-      dropTarget.style.border = '2px solid red';
-      dropTarget.style.backgroundColor = '#f8d7da';
+    // Remove the whole match-row regardless of match correctness
+    const row = original.closest('.match-row');
+    if (row) {
+      row.remove();
     }
 
     attempts++;
@@ -290,6 +287,7 @@
       showPopup();
     }
   } else {
+    // If dropped outside valid target → do nothing and return emoji
     original.style.visibility = 'visible';
   }
 
@@ -297,6 +295,7 @@
   document.removeEventListener('touchend', dropClone);
   clone.remove();
 }
+
 
 
         document.addEventListener('touchmove', moveClone, { passive: false });
