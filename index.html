@@ -293,7 +293,7 @@
     const droppedWord = dropTarget.getAttribute('data-answer');
     const droppedEmoji = emojiAnswers[index].emoji;
 
-    // Show feedback without revealing correctness
+    // Show feedback
     const feedback = document.getElementById('feedback');
     feedback.textContent = `Dropped ${droppedEmoji} on "${droppedWord}"`;
     feedback.style.display = 'block';
@@ -301,19 +301,18 @@
     void feedback.offsetWidth; // reflow
     feedback.style.animation = 'fadeInOut 1.5s ease forwards';
 
-    // Score only if correct
+    // Update score if correct
     if (droppedWord === emojiAnswers[index].answer) {
       score += 5;
     }
 
-    // Remove the row where the word (drop target) is
-    const row = dropTarget.closest('.match-row');
-    if (row) {
-      row.remove();
-    }
+    // Remove only the dragged emoji and the drop target
+    original.remove(); // the emoji you dragged
+    dropTarget.remove(); // the word you dropped on
 
     attempts++;
-    if (document.querySelectorAll('.match-row').length === 0) {
+    if (document.querySelectorAll('.emoji').length === 0 ||
+        document.querySelectorAll('.droppable').length === 0) {
       clearInterval(interval);
       localStorage.setItem("emojiGamePlayed", "true");
       showPopup();
@@ -326,10 +325,6 @@
   document.removeEventListener('touchend', dropClone);
   clone.remove();
 }
-
-
-
-
 
         document.addEventListener('touchmove', moveClone, { passive: false });
         document.addEventListener('touchend', dropClone, { passive: false });
