@@ -283,6 +283,7 @@
 
         function dropClone(ev) {
   ev.preventDefault();
+
   const dropTarget = document.elementFromPoint(
     ev.changedTouches[0].clientX,
     ev.changedTouches[0].clientY
@@ -293,38 +294,45 @@
     const droppedWord = dropTarget.getAttribute('data-answer');
     const droppedEmoji = emojiAnswers[index].emoji;
 
-    // Show feedback
+    // Visual feedback (no correctness reveal)
     const feedback = document.getElementById('feedback');
     feedback.textContent = `Dropped ${droppedEmoji} on "${droppedWord}"`;
     feedback.style.display = 'block';
     feedback.style.animation = 'none';
-    void feedback.offsetWidth; // reflow
+    void feedback.offsetWidth; // force reflow
     feedback.style.animation = 'fadeInOut 1.5s ease forwards';
 
-    // Update score if correct
+    // Score only if correct
     if (droppedWord === emojiAnswers[index].answer) {
       score += 5;
     }
 
-    // Remove only the dragged emoji and the drop target
-    original.remove(); // the emoji you dragged
-    dropTarget.remove(); // the word you dropped on
+    // Remove only the dragged emoji and the word it was dropped on
+    original.remove();
+    dropTarget.remove();
 
     attempts++;
-    if (document.querySelectorAll('.emoji').length === 0 ||
-        document.querySelectorAll('.droppable').length === 0) {
-      clearInterval(interval);
+
+    // Check game over — only if ALL emojis and ALL words are gone
+    if (
+      document.querySelectorAll('.emoji').length === 0 &&
+      document.querySelectorAll('.droppable').length === 0
+    ) {
+      clearInterval(interval); // stop timer
       localStorage.setItem("emojiGamePlayed", "true");
       showPopup();
     }
   } else {
+    // Put emoji back if not dropped on valid target
     original.style.visibility = 'visible';
   }
 
+  // Remove drag listeners
   document.removeEventListener('touchmove', moveClone);
   document.removeEventListener('touchend', dropClone);
   clone.remove();
 }
+
 
         document.addEventListener('touchmove', moveClone, { passive: false });
         document.addEventListener('touchend', dropClone, { passive: false });
